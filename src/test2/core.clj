@@ -24,12 +24,13 @@
 
 (defn query-domains
   "Extract unique domain names from METADATA-TAP."
-  [metadata-tap]
+  [metadata-tap trap-tap]
   (<- [?domain]
       (metadata-tap :> ?url _)
       (parse-host ?url :> ?host)
       (extract-domain ?host :> ?domain)
-      (c/count :> _)))
+      (:distinct true)
+      (:trap trap-tap)))
 
 (defn -main
   ([inpath] (-main inpath "-"))
@@ -37,6 +38,9 @@
      (let [metadata-tap (make-metadata-tap inpath)
            output-tap (if (= outpath "-")
                         (stdout)
-                        (hfs-textline outpath))]
+                        (hfs-textline outpath))
+           trap-tap (if (= outpath "-")
+                      (stdout)
+                      (hfs-seqfile (str outpath ".trap")))]
        (?- output-tap
-           (query-domains metadata-tap)))))
+           (query-domains metadata-tap trap-tap)))))
