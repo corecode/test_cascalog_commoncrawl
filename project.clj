@@ -6,8 +6,6 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [cascalog "1.10.0"]
                  [cascalog-more-taps "0.3.0"]
-                 [commons-httpclient "3.0.1"]]
-  :profiles {:dev
-             {:dependencies [[org.apache.hadoop/hadoop-core "1.1.1"]]}}
+                 [org.apache.hadoop/hadoop-core "1.1.1"]]
   :warn-on-reflection true
   :main test2.core)
