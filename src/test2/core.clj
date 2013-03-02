@@ -2,7 +2,8 @@
   (:require [clojure.string :as s]
             [cascalog.ops :as c]
             [cascalog.tap :as tap]
-            [cascalog.workflow :as w])
+            [cascalog.workflow :as w]
+            [clj-json.core :as json])
   (:use cascalog.api
         [cascalog.more-taps :only (hfs-wrtseqfile)])
   (:import [org.apache.hadoop.io Text]
@@ -26,21 +27,52 @@
 (defmapop ^String parse-host
   "Return the host part of an URI."
   [^Text uri]
-  (-> uri str URI. .getHost (or "")))
+  (-> uri str URI. .getHost))
 
 (defmapop ^String extract-domain
   "Return the domain part of a host name"
   [^String domain]
-  (->> domain (re-matches #"^(?:[^.]+[.])*?([^.]+[.](?:com?[.])?[^.]+)$") peek))
+  (some->> domain (re-matches #"^(?:[^.]+[.])*?([^.]+[.](?:com?[.])?[\p{Alpha}]+)$") peek s/lower-case))
+
+(defmapcatop extract-links
+  "Return the links from metadata."
+  [^Text metadata]
+  (let [json (-> metadata str json/parse-string)
+        links (get-in json ["content" "links"] [])]
+    (->> links
+         (keep (fn [x]
+                 (or (and (= "a" (get x "type"))
+                          (get x "href"))
+                     nil)))
+         vec)))
+
+(defn -union
+  "Faster version of union."
+  [a b]
+  (set (concat a b)))
+
+(defparallelagg collect-in-set
+  "Aggregates values in a set."
+  :init-var #'hash-set
+  :combine-var #'-union)
+
+(defn list-to-str
+  [l]
+  (s/join " " l))
 
 (defn query-domains
   "Extract unique domain names from METADATA-TAP."
   [metadata-tap trap-tap]
-  (<- [?domain]
-      (metadata-tap :> ?url _)
+  (<- [?link-domain ?domain-list-str]
+      (metadata-tap :> ?url ?meta)
+      (extract-links ?meta :> ?link)
       (parse-host ?url :> ?host)
       (extract-domain ?host :> ?domain)
-      (:distinct true)
+      (parse-host ?link :> ?link-host)
+      (extract-domain ?link-host :> ?link-domain)
+      (not= ?link-domain ?domain)
+      (collect-in-set ?domain :> ?domain-list)
+      (list-to-str ?domain-list :> ?domain-list-str)
       (:trap trap-tap)))
 
 (defn -main
@@ -53,6 +85,5 @@
            trap-tap (if (= outpath "-")
                       (stdout)
                       (hfs-seqfile (str outpath ".trap")))]
-       (with-job-conf {"mapred.output.compress" "true"}
-         (?- output-tap
-             (query-domains metadata-tap trap-tap))))))
+       (?- output-tap
+           (query-domains metadata-tap trap-tap)))))
