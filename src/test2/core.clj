@@ -27,12 +27,12 @@
 (defmapop ^String parse-host
   "Return the host part of an URI."
   [^Text uri]
-  (-> uri str URI. .getHost))
+  (some-> uri str URI. .getHost s/lower-case))
 
 (defmapop ^String extract-domain
   "Return the domain part of a host name"
   [^String domain]
-  (some->> domain (re-matches #"^(?:[^.]+[.])*?([^.]+[.](?:com?[.])?[\p{Alpha}]+)$") peek s/lower-case))
+  (->> domain (re-matches #"^(?:[^.]+[.])*?([a-z0-9-]+[.](?:com?[.])?[a-z]+)$") peek))
 
 (defmapcatop extract-links
   "Return the links from metadata."
