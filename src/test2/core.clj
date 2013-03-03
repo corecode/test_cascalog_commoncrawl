@@ -49,7 +49,10 @@
 (defn -union
   "Faster version of union."
   [a b]
-  (set (concat a b)))
+  (cond
+   (= 1 (count b)) (conj a (first b))
+   (= 1 (count a)) (conj b (first a))
+   :else (set (concat a b))))
 
 (defparallelagg collect-in-set
   "Aggregates values in a set."
