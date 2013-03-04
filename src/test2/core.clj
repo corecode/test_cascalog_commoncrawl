@@ -32,7 +32,7 @@
 (defmapop ^String extract-domain
   "Return the domain part of a host name"
   [^String domain]
-  (->> domain (re-matches #"^(?:[^.]+[.])*?([a-z0-9-]+[.](?:com?[.])?[a-z]+)$") peek))
+  (->> domain (re-matches #"^(?:[^.]+[.])*?([a-z0-9-]+[.](?:com?[.])?[a-z-]+)$") peek))
 
 (defmapcatop extract-links
   "Return the links from metadata."
