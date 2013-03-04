@@ -87,6 +87,6 @@
                         (hfs-textline-compressed outpath))
            trap-tap (if (= outpath "-")
                       (stdout)
-                      (hfs-seqfile (str outpath ".trap")))]
+                      (hfs-textline (str outpath ".trap")))]
        (?- output-tap
            (query-domains metadata-tap trap-tap)))))
