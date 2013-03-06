@@ -66,16 +66,15 @@
 (defn query-domains
   "Extract unique domain names from METADATA-TAP."
   [metadata-tap trap-tap]
-  (<- [?link-domain ?domain-list-str]
-      (metadata-tap :> ?url ?meta)
-      (extract-links ?meta :> ?link)
-      (parse-host ?url :> ?host)
-      (extract-domain ?host :> ?domain)
-      (parse-host ?link :> ?link-host)
-      (extract-domain ?link-host :> ?link-domain)
-      (not= ?link-domain ?domain)
-      (collect-in-set ?domain :> ?domain-list)
-      (list-to-str ?domain-list :> ?domain-list-str)
+  (<- [?from-domain ?to-domain ?count]
+      (metadata-tap :> ?from-url ?meta)
+      (extract-links ?meta :> ?to-url)
+      (parse-host ?from-url :> ?from-host)
+      (extract-domain ?from-host :> ?from-domain)
+      (parse-host ?to-url :> ?to-host)
+      (extract-domain ?to-host :> ?to-domain)
+      (not= ?to-domain ?from-domain)
+      (c/count ?count)
       (:trap trap-tap)))
 
 (defn -main
